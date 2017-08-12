@@ -33,6 +33,9 @@ public class InsertTestData {
         METRICS.add("sys.eth.tx-packets");
         METRICS.add("sys.swap.free");
         METRICS.add("sys.swap.used");
+        METRICS.add("sys.sparse.event.a");
+        METRICS.add("sys.sparse.event.b");
+        METRICS.add("sys.sparse.event.c");
     }
 
     private static final List<String> HOSTS = new ArrayList<>();
@@ -67,6 +70,15 @@ public class InsertTestData {
         VISIBILITIES.put("sys.eth.tx-packets", "F");
     }
 
+    private static final Map<String, Float> PROBABILITIES = new HashMap<>();
+    private static final Float NEVER = Float.valueOf(0.0f);
+    private static final Float ALWAYS = Float.valueOf(1.0f);
+    static {
+        PROBABILITIES.put("sys.sparse.event.a", 0.10f);
+        PROBABILITIES.put("sys.sparse.event.b", 0.05f);
+        PROBABILITIES.put("sys.sparse.event.c", 0.01f);
+    }
+
     private static final String FMT = "put {0} {1,number,#} {2,number} host={4}{3} rack={4} instance={5}";
 
     private static String usage() {
@@ -93,10 +105,14 @@ public class InsertTestData {
                 long time = System.currentTimeMillis();
                 METRICS.forEach(m -> {
                     final String viz = VISIBILITIES.get(m);
+                    final Float prob = PROBABILITIES.get(m);
                     RACKS.forEach(rack -> {
                         HOSTS.forEach(host -> {
                             INSTANCES.forEach(instance -> {
                                 if (!m.startsWith("sys.cpu.") && !instance.equals("0")) {
+                                    return;
+                                }
+                                if (ThreadLocalRandom.current().nextFloat() > (prob != null ? prob : ALWAYS)) {
                                     return;
                                 }
                                 String put = MessageFormat.format(FMT, m, time,
